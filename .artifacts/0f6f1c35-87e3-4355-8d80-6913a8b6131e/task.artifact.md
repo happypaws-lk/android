@@ -1,0 +1,8 @@
+- [x] Create `ContextUtils.kt`
+- [ ] Update `AuthRepositoryImpl.kt` with logging and Activity context
+- [ ] Update `LoginScreen.kt` with Autofill semantics
+- [x] Update `MainActivity.kt` startRoute logic
+- [x] Create/Update `KeyboardUtils.kt`
+- [x] Create/Update `CollapsibleHeader.kt`
+- [x] Refactor `LoginScreen.kt` for keyboard awareness and fixed IME actions
+- [ ] Verify build and check logs
