@@ -20,6 +20,7 @@ import lk.happypaws.app.ui.navigation.BottomNavItem
 import lk.happypaws.app.ui.navigation.HappyPawsBottomNavBar
 import lk.happypaws.app.ui.navigation.HomeNavKey
 import lk.happypaws.app.ui.navigation.AppNavKey
+import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,6 +49,7 @@ fun HomeScreen(
 
     Scaffold(
         modifier = modifier,
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
         bottomBar = {
             HappyPawsBottomNavBar(
                 currentRoute = currentRoute,
@@ -68,7 +70,11 @@ fun HomeScreen(
             )
         }
     ) { paddingValues ->
-        Box(modifier = Modifier.padding(paddingValues)) {
+        Box(
+            modifier = Modifier
+                .padding(paddingValues)
+                .padding(top = 28.dp)
+        ) {
             NavHost(
                 navController = nestedNavController,
                 startDestination = HomeNavKey.CommunityTab

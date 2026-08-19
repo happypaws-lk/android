@@ -52,10 +52,8 @@ fun CommunityScreen(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(24.dp)
+            .padding(horizontal = 24.dp, vertical = 16.dp)
     ) {
-        Spacer(modifier = Modifier.height(32.dp))
-
         // Header Section
         Row(
             modifier = Modifier.fillMaxWidth(),

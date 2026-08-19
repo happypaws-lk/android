@@ -27,24 +27,21 @@ class ProfileViewModel @Inject constructor(
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
-    private val _uiState = kotlinx.coroutines.flow.MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
-    val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<ProfileUiState> = userRepository.getMeProfileStream().map { profile ->
+        if (profile != null) {
+            ProfileUiState.Success(profile)
+        } else {
+            ProfileUiState.Loading
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = ProfileUiState.Loading
+    )
 
-    init {
-        fetchProfile()
-    }
-
-    private fun fetchProfile() {
+    fun refreshProfile() {
         viewModelScope.launch {
-            _uiState.value = ProfileUiState.Loading
-            userRepository.fetchMeProfile().fold(
-                onSuccess = { profile ->
-                    _uiState.value = ProfileUiState.Success(profile)
-                },
-                onFailure = { error ->
-                    _uiState.value = ProfileUiState.Error(error.message ?: "Failed to load profile")
-                }
-            )
+            userRepository.fetchMeProfile()
         }
     }
 

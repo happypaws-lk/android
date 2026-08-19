@@ -31,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import lk.happypaws.app.data.remote.model.MeProfileResponse
+import lk.happypaws.app.ui.components.UserAvatar
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -42,7 +43,7 @@ fun ProfileHeaderCard(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
     ) {
@@ -54,39 +55,11 @@ fun ProfileHeaderCard(
                 verticalAlignment = Alignment.Top,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Box {
-                    if (profile.avatarKey != null) {
-                        Box(
-                            modifier = Modifier
-                                .size(80.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AccountBox,
-                                contentDescription = "Profile Picture",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(40.dp)
-                            )
-                        }
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .size(80.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = profile.name.take(1).uppercase(),
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                }
+                UserAvatar(
+                    name = profile.name,
+                    avatarKey = profile.avatarKey,
+                    size = 80.dp
+                )
 
                 IconButton(
                     onClick = onEditProfile,

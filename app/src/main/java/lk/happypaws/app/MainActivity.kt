@@ -244,7 +244,9 @@ class MainActivity : ComponentActivity() {
                             
                             // Profile & Role Feature Stubs
                             composable<AppNavKey.EditProfile> {
-                                lk.happypaws.app.ui.profile.StubScreen("Edit Profile") { navController.popBackStack() }
+                                lk.happypaws.app.ui.profile.EditProfileScreen(
+                                    onNavigateBack = { navController.popBackStack() }
+                                )
                             }
                             composable<AppNavKey.KycVerification> {
                                 lk.happypaws.app.ui.profile.StubScreen("KYC Verification") { navController.popBackStack() }

@@ -133,6 +133,7 @@ jobs:
       - name: Assemble Release APK
         env:
           API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          STORAGE_BASE_URL: ${{ secrets.STORAGE_BASE_URL }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
@@ -145,6 +146,10 @@ jobs:
 
           if [ -n "$API_BASE_URL" ]; then
             GRADLE_ARGS="$GRADLE_ARGS -PAPI_BASE_URL=$API_BASE_URL"
+          fi
+
+          if [ -n "$STORAGE_BASE_URL" ]; then
+            GRADLE_ARGS="$GRADLE_ARGS -PSTORAGE_BASE_URL=$STORAGE_BASE_URL"
           fi
 
           ./gradlew assembleRelease $GRADLE_ARGS --stacktrace

@@ -1,15 +1,16 @@
 package lk.happypaws.app.ui.home
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.Devices
-import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.LocalShipping
@@ -23,16 +24,17 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import lk.happypaws.app.ui.home.components.ProfileHeaderCard
 import lk.happypaws.app.ui.home.components.ProfileListItem
 import lk.happypaws.app.ui.home.components.ProfileSection
@@ -45,44 +47,46 @@ fun ProfileScreen(
     onLogout: () -> Unit = {},
     onNavigateTo: (AppNavKey) -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.refreshProfile()
+    }
 
-    Scaffold(modifier = modifier.fillMaxSize()) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            when (val state = uiState) {
-                is ProfileUiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-                is ProfileUiState.Error -> {
-                    Text(
-                        text = state.message,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-                is ProfileUiState.Unauthenticated -> {
-                    Text(
-                        text = "Session expired",
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-                is ProfileUiState.Success -> {
-                    val profile = state.profile
-                    val roleNames = profile.roles.map { it.role }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        item {
-                            ProfileHeaderCard(
-                                profile = profile,
-                                onEditProfile = { onNavigateTo(AppNavKey.EditProfile) }
-                            )
-                        }
+    Box(
+        modifier = modifier.fillMaxSize()
+    ) {
+        when (val state = uiState) {
+            is ProfileUiState.Loading -> {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
+            is ProfileUiState.Error -> {
+                Text(
+                    text = state.message,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+            is ProfileUiState.Unauthenticated -> {
+                Text(
+                    text = "Session expired",
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+            is ProfileUiState.Success -> {
+                val profile = state.profile
+                val roleNames = profile.roles.map { it.role }
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp)
+                ) {
+                    item {
+                        ProfileHeaderCard(
+                            profile = profile,
+                            onEditProfile = { onNavigateTo(AppNavKey.EditProfile) }
+                        )
+                    }
 
                         item {
                             ProfileSection(title = "General") {
@@ -93,7 +97,7 @@ fun ProfileScreen(
                                     onClick = { onNavigateTo(AppNavKey.LifestyleProfile) }
                                 )
                                 ProfileListItem(
-                                    icon = Icons.Default.Assignment,
+                                    icon = Icons.AutoMirrored.Filled.Assignment,
                                     title = "My Applications",
                                     subtitle = "Track adoption requests",
                                     onClick = { onNavigateTo(AppNavKey.MyApplications) }
@@ -210,7 +214,7 @@ fun ProfileScreen(
                                         contentColor = MaterialTheme.colorScheme.error
                                     )
                                 ) {
-                                    Icon(Icons.Default.ExitToApp, contentDescription = null)
+                                    Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null)
                                     Text(
                                         text = "Log Out",
                                         fontWeight = FontWeight.Bold,
@@ -233,4 +237,3 @@ fun ProfileScreen(
             }
         }
     }
-}

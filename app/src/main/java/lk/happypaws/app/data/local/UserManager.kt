@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import lk.happypaws.app.data.remote.model.MeProfileResponse
 import lk.happypaws.app.data.remote.model.UserProfileResponse
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -32,19 +33,37 @@ class UserManager @Inject constructor(@ApplicationContext private val context: C
         }
     }
 
+    val meProfileFlow: Flow<MeProfileResponse?> = dataStore.data.map { preferences ->
+        preferences[ME_PROFILE_KEY]?.let { json ->
+            try {
+                Json.decodeFromString<MeProfileResponse>(json)
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
     suspend fun saveUserProfile(profile: UserProfileResponse) {
         dataStore.edit { preferences ->
             preferences[USER_PROFILE_KEY] = Json.encodeToString(profile)
         }
     }
 
+    suspend fun saveMeProfile(profile: MeProfileResponse) {
+        dataStore.edit { preferences ->
+            preferences[ME_PROFILE_KEY] = Json.encodeToString(profile)
+        }
+    }
+
     suspend fun clearUserData() {
         dataStore.edit { preferences ->
             preferences.remove(USER_PROFILE_KEY)
+            preferences.remove(ME_PROFILE_KEY)
         }
     }
 
     companion object {
         private val USER_PROFILE_KEY = stringPreferencesKey("user_profile_json")
+        private val ME_PROFILE_KEY = stringPreferencesKey("me_profile_json")
     }
 }

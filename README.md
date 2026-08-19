@@ -147,7 +147,8 @@ To enable the release workflow, add these secrets under **Settings -> Secrets an
 
 | Secret name | Purpose | Example / format |
 | :--- | :--- | :--- |
-| `API_BASE_URL` | Lightsail container base URL | `https://api.happypaws.lk/` |
+| `API_BASE_URL` | Lightsail / Production API base URL | `https://api.happypaws.lk/` |
+| `STORAGE_BASE_URL` | *(Optional)* Public Cloudflare R2 bucket / CDN URL | `https://pub-xxxxxxxx.r2.dev` or `https://cdn.happypaws.lk` |
 | `KEYSTORE_BASE64` | Base64-encoded release `.jks` file | Base64 string |
 | `KEYSTORE_PASSWORD` | Keystore password | Secret password |
 | `KEY_ALIAS` | Key alias in the keystore | `happypaws` |

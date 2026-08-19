@@ -14,7 +14,25 @@ android {
 
     val apiBaseUrl: String = providers.gradleProperty("API_BASE_URL")
         .orElse(providers.environmentVariable("API_BASE_URL"))
-        .getOrElse("https://happypaws-api.q8h6jm01tmx72.ap-southeast-1.cs.amazonlightsail.com/")
+        .getOrElse("https://10.233.202.121:7141/")
+
+    val storageBaseUrl: String = providers.gradleProperty("STORAGE_BASE_URL")
+        .orElse(providers.gradleProperty("R2_PUBLIC_URL"))
+        .orElse(providers.environmentVariable("STORAGE_BASE_URL"))
+        .orElse(providers.environmentVariable("R2_PUBLIC_URL"))
+        .orElse(providers.environmentVariable("NEXT_PUBLIC_R2_PUBLIC_URL"))
+        .getOrElse(
+            run {
+                if (apiBaseUrl.contains("10.") || apiBaseUrl.contains("192.168.") || apiBaseUrl.contains("172.") || apiBaseUrl.contains("localhost") || apiBaseUrl.contains("10.0.2.2")) {
+                    val hostRegex = Regex("""https?://([^:/]+)""")
+                    val match = hostRegex.find(apiBaseUrl)
+                    val host = match?.groupValues?.get(1) ?: "10.233.202.121"
+                    "http://$host:9000/happypaws-public"
+                } else {
+                    "https://cdn.happypaws.lk"
+                }
+            }
+        )
 
     val customVersionCode: Int = providers.gradleProperty("versionCode")
         .map { it.toInt() }
@@ -56,6 +74,7 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
+        buildConfigField("String", "STORAGE_BASE_URL", "\"$storageBaseUrl\"")
     }
 
     buildTypes {
@@ -112,6 +131,9 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
     implementation(libs.okhttp.logging.interceptor)
+
+    // Image Loading
+    implementation(libs.coil.compose)
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
