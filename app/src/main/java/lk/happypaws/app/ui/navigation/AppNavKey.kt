@@ -36,4 +36,45 @@ sealed interface AppNavKey {
 
     @Serializable
     data object PasswordResetSuccess : AppNavKey
+
+    // Profile & General Functionalities
+    @Serializable
+    data object EditProfile : AppNavKey
+
+    @Serializable
+    data object KycVerification : AppNavKey
+
+    @Serializable
+    data object LifestyleProfile : AppNavKey
+
+    @Serializable
+    data object MyListings : AppNavKey
+
+    @Serializable
+    data object MyApplications : AppNavKey
+
+    @Serializable
+    data object RescueReports : AppNavKey
+
+    @Serializable
+    data object RoleManagement : AppNavKey
+
+    @Serializable
+    data object ChangePassword : AppNavKey
+
+    @Serializable
+    data object RegisteredDevices : AppNavKey
+
+    // Role-specific Stub Routes
+    @Serializable
+    data object FosterDashboard : AppNavKey
+
+    @Serializable
+    data object TransportTasks : AppNavKey
+
+    @Serializable
+    data object Sponsorships : AppNavKey
+
+    @Serializable
+    data object VetConsultations : AppNavKey
 }

@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.getValue
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -42,6 +43,8 @@ import lk.happypaws.app.ui.onboarding.OnboardingScreen
 import lk.happypaws.app.ui.theme.HappyPawsTheme
 import javax.inject.Inject
 
+import androidx.activity.viewModels
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
@@ -51,11 +54,14 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var sessionManager: SessionManager
 
+    private val mainViewModel: MainViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
-        var keepOnScreen = true
-        splashScreen.setKeepOnScreenCondition { keepOnScreen }
-        Handler(Looper.getMainLooper()).postDelayed({ keepOnScreen = false }, 950)
+        
+        splashScreen.setKeepOnScreenCondition { 
+            mainViewModel.connectionState.value == ConnectionState.LOADING 
+        }
 
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -82,6 +88,14 @@ class MainActivity : ComponentActivity() {
                 val startRoute: AppNavKey = remember {
                     if (authRepository.isLoggedIn()) AppNavKey.Home else AppNavKey.Onboarding
                 }
+
+                androidx.compose.runtime.LaunchedEffect(Unit) {
+                    repeatOnLifecycle(Lifecycle.State.STARTED) {
+                        mainViewModel.checkConnectivity()
+                    }
+                }
+
+                val connectionState by mainViewModel.connectionState.collectAsStateWithLifecycle()
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Box(modifier = Modifier.padding(innerPadding)) {
@@ -221,9 +235,59 @@ class MainActivity : ComponentActivity() {
                                         navController.navigate(AppNavKey.Onboarding) {
                                             popUpTo(0) { inclusive = true }
                                         }
+                                    },
+                                    onNavigateTo = { route ->
+                                        navController.navigate(route)
                                     }
                                 )
                             }
+                            
+                            // Profile & Role Feature Stubs
+                            composable<AppNavKey.EditProfile> {
+                                lk.happypaws.app.ui.profile.StubScreen("Edit Profile") { navController.popBackStack() }
+                            }
+                            composable<AppNavKey.KycVerification> {
+                                lk.happypaws.app.ui.profile.StubScreen("KYC Verification") { navController.popBackStack() }
+                            }
+                            composable<AppNavKey.LifestyleProfile> {
+                                lk.happypaws.app.ui.profile.StubScreen("Lifestyle Profile") { navController.popBackStack() }
+                            }
+                            composable<AppNavKey.MyListings> {
+                                lk.happypaws.app.ui.profile.StubScreen("My Animal Listings") { navController.popBackStack() }
+                            }
+                            composable<AppNavKey.MyApplications> {
+                                lk.happypaws.app.ui.profile.StubScreen("My Adoption Applications") { navController.popBackStack() }
+                            }
+                            composable<AppNavKey.RescueReports> {
+                                lk.happypaws.app.ui.profile.StubScreen("My Rescue Reports") { navController.popBackStack() }
+                            }
+                            composable<AppNavKey.RoleManagement> {
+                                lk.happypaws.app.ui.profile.StubScreen("Manage Roles") { navController.popBackStack() }
+                            }
+                            composable<AppNavKey.ChangePassword> {
+                                lk.happypaws.app.ui.profile.StubScreen("Change Password") { navController.popBackStack() }
+                            }
+                            composable<AppNavKey.RegisteredDevices> {
+                                lk.happypaws.app.ui.profile.StubScreen("Registered Devices") { navController.popBackStack() }
+                            }
+                            composable<AppNavKey.FosterDashboard> {
+                                lk.happypaws.app.ui.profile.StubScreen("Foster Dashboard") { navController.popBackStack() }
+                            }
+                            composable<AppNavKey.TransportTasks> {
+                                lk.happypaws.app.ui.profile.StubScreen("Transport Tasks") { navController.popBackStack() }
+                            }
+                            composable<AppNavKey.Sponsorships> {
+                                lk.happypaws.app.ui.profile.StubScreen("Sponsorships") { navController.popBackStack() }
+                            }
+                            composable<AppNavKey.VetConsultations> {
+                                lk.happypaws.app.ui.profile.StubScreen("Veterinarian Consultations") { navController.popBackStack() }
+                            }
+                        }
+
+                        if (connectionState == ConnectionState.ERROR) {
+                            lk.happypaws.app.ui.components.NoConnectionScreen(
+                                onRetry = { mainViewModel.checkConnectivity() }
+                            )
                         }
                     }
                 }

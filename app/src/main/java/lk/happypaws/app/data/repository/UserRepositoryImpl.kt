@@ -48,4 +48,17 @@ class UserRepositoryImpl @Inject constructor(
             // Silently fail or log
         }
     }
+
+    override suspend fun fetchMeProfile(): Result<lk.happypaws.app.data.remote.model.MeProfileResponse> {
+        return try {
+            val response = userApi.getMeProfile()
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to fetch profile: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

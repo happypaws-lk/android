@@ -12,19 +12,58 @@ android {
         version = release(37)
     }
 
+    val apiBaseUrl: String = providers.gradleProperty("API_BASE_URL")
+        .orElse(providers.environmentVariable("API_BASE_URL"))
+        .getOrElse("https://happypaws-api.q8h6jm01tmx72.ap-southeast-1.cs.amazonlightsail.com/")
+
+    val customVersionCode: Int = providers.gradleProperty("versionCode")
+        .map { it.toInt() }
+        .getOrElse(1)
+
+    val customVersionName: String = providers.gradleProperty("versionName")
+        .getOrElse("1.0.0")
+
+    val keystoreFilePath: String? = providers.gradleProperty("KEYSTORE_FILE")
+        .orElse(providers.environmentVariable("KEYSTORE_FILE"))
+        .orNull
+    val keystorePassword: String? = providers.gradleProperty("KEYSTORE_PASSWORD")
+        .orElse(providers.environmentVariable("KEYSTORE_PASSWORD"))
+        .orNull
+    val keyAlias: String? = providers.gradleProperty("KEY_ALIAS")
+        .orElse(providers.environmentVariable("KEY_ALIAS"))
+        .orNull
+    val keyPassword: String? = providers.gradleProperty("KEY_PASSWORD")
+        .orElse(providers.environmentVariable("KEY_PASSWORD"))
+        .orNull
+
+    signingConfigs {
+        create("release") {
+            if (!keystoreFilePath.isNullOrBlank() && file(keystoreFilePath).exists()) {
+                storeFile = file(keystoreFilePath)
+                storePassword = keystorePassword
+                this.keyAlias = keyAlias
+                this.keyPassword = keyPassword
+            }
+        }
+    }
+
     defaultConfig {
         applicationId = "lk.happypaws.app"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = customVersionCode
+        versionName = customVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "API_BASE_URL", "\"https://10.178.220.121:7141/\"")
+        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
     }
 
     buildTypes {
         release {
+            val releaseSigning = signingConfigs.findByName("release")
+            if (releaseSigning?.storeFile != null && releaseSigning.storeFile!!.exists()) {
+                signingConfig = releaseSigning
+            }
             optimization {
                 enable = false
             }

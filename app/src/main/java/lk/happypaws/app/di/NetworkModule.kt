@@ -66,6 +66,12 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideHealthApi(@Named("AuthRetrofit") retrofit: Retrofit): lk.happypaws.app.data.remote.api.HealthApi {
+        return retrofit.create(lk.happypaws.app.data.remote.api.HealthApi::class.java)
+    }
+
+    @Provides
+    @Singleton
     fun provideOkHttpClient(
         authInterceptor: AuthInterceptor,
         tokenAuthenticator: TokenAuthenticator,

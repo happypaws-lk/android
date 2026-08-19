@@ -26,4 +26,10 @@ abstract class RepositoryModule {
         userRepositoryImpl: UserRepositoryImpl
     ): UserRepository
 
+    @Binds
+    @Singleton
+    abstract fun bindHealthRepository(
+        healthRepositoryImpl: lk.happypaws.app.data.repository.HealthRepositoryImpl
+    ): lk.happypaws.app.domain.repository.HealthRepository
+
 }
