@@ -1,4 +1,4 @@
-<a href="https://github.com/happypaws-lk/happypaws-android" align="center">
+<a href="https://github.com/happypaws-lk/android" align="center">
     <img src=".github/assets/banner.jpg" alt="HappyPaws Android App">
 </a>
 
@@ -41,12 +41,12 @@ The app supports emergency rescue reporting, adoption management, verified KYC i
 
 You can install the latest production build directly on any Android device running Android 8.0 (API 26) or newer.
 
-- **Download website:** [happypaws-lk.github.io/happypaws-android](https://happypaws-lk.github.io/happypaws-android/)
-- **GitHub releases:** [github.com/happypaws-lk/happypaws-android/releases](https://github.com/happypaws-lk/happypaws-android/releases)
+- **Download website:** [happypaws-lk.github.io/android](https://happypaws-lk.github.io/android/)
+- **GitHub releases:** [github.com/happypaws-lk/android/releases](https://github.com/happypaws-lk/android/releases)
 
 ### How to install on your device
 
-1. Visit the [download website](https://happypaws-lk.github.io/happypaws-android/) or open [GitHub releases](https://github.com/happypaws-lk/happypaws-android/releases) on your phone.
+1. Visit the [download website](https://happypaws-lk.github.io/android/) or open [GitHub releases](https://github.com/happypaws-lk/android/releases) on your phone.
 2. Tap **Download Android APK** to download the latest signed `HappyPaws-v*.apk` package.
 3. If prompted by Android, open **Settings** and turn on **Allow from this source** for your browser or file manager.
 4. Tap the downloaded file to complete installation and open HappyPaws.
@@ -74,8 +74,8 @@ Make sure you have these tools installed:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/happypaws-lk/happypaws-android.git
-   cd happypaws-android
+   git clone https://github.com/happypaws-lk/android.git
+   cd android
    ```
 
 2. Open the project:
@@ -116,11 +116,30 @@ Run these Gradle commands from the `android/` folder:
 
 ## Release pipeline
 
-The repository uses GitHub Actions for automated production releases:
+The Android repository uses GitHub Actions for automated production builds, SemVer versioning, and GitHub Releases.
 
-- **Pre-flight health check:** The release workflow pings your Lightsail container API `/health` endpoint before compiling.
-- **Automated signing:** Builds and signs the APK using keystore credentials stored in GitHub Secrets.
-- **GitHub releases:** Publishes the signed `HappyPaws-v*.apk` artifact automatically when you push a version tag (such as `v1.0.0`) or trigger the workflow manually.
+### How releases work
+
+Whenever you push or merge commits into the `main` branch, the release workflow runs through these steps:
+
+1. **Pre-flight health check:** Pings your Lightsail backend container (`/health` and `/healthz`) to verify the backend is online before compiling.
+2. **Automated SemVer tagging:** Inspects your commit messages to calculate the next semantic version tag starting from baseline `v0.1.0`.
+3. **Signed APK compilation:** Decodes your release keystore from GitHub Secrets and compiles a signed, universal APK (`arm64`, `armv7`, `x86`).
+4. **GitHub release publishing:** Creates a new GitHub Release with the generated changelog, attaches the signed `HappyPaws-v*.apk` artifact, and makes it available for immediate download.
+5. **Landing page sync:** The [HappyPaws download landing page](https://happypaws-lk.github.io/android/) automatically detects the new release, updates the download button URL, displays the new version tag, and shows the file size.
+
+### Commit patterns and version elevation
+
+Version numbers elevate automatically based on standard Conventional Commits prefixes:
+
+| Commit prefix | Version bump type | Example transition | When to use |
+| :--- | :--- | :--- | :--- |
+| `fix: ...` | **Patch** | `v0.1.0` -> `v0.1.1` | Bug fixes, UI adjustments, and crash patches |
+| `feat: ...` | **Minor** | `v0.1.0` -> `v0.2.0` | New user-facing features, screens, or workflow additions |
+| `feat!: ...` or `BREAKING CHANGE:` | **Major** | `v0.9.0` -> `v1.0.0` | Breaking architectural changes, or official MVP launch |
+| `chore:`, `docs:`, `ci:`, `test:` | **Patch / Internal** | `v0.1.0` -> `v0.1.1` | Internal maintenance, documentation, and tooling updates |
+
+Pre-MVP development starts at version baseline `v0.1.0`. Use `feat:` to iterate through pre-release milestones (`v0.2.0`, `v0.3.0`, etc.) until ready for the official `v1.0.0` launch.
 
 ### Required GitHub secrets
 
@@ -131,7 +150,7 @@ To enable the release workflow, add these secrets under **Settings -> Secrets an
 | `API_BASE_URL` | Lightsail container base URL | `https://api.happypaws.lk/` |
 | `KEYSTORE_BASE64` | Base64-encoded release `.jks` file | Base64 string |
 | `KEYSTORE_PASSWORD` | Keystore password | Secret password |
-| `KEY_ALIAS` | Key alias in the keystore | `happypaws-key` |
+| `KEY_ALIAS` | Key alias in the keystore | `happypaws` |
 | `KEY_PASSWORD` | Password for the key alias | Secret password |
 
 To generate the `KEYSTORE_BASE64` string from your `.jks` file, run:

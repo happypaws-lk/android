@@ -13,29 +13,21 @@ async function fetchLatestRelease() {
   const heroVersionTag = document.getElementById('hero-version-tag');
   const btnLabel = document.getElementById('btn-label-text');
 
-  // Repositories to check in sequence
-  const repos = [
-    'happypaws-lk/happypaws-android',
-    'happypaws-lk/happypaws-lk'
-  ];
-
+  const repo = 'happypaws-lk/android';
   let releaseData = null;
 
-  for (const repo of repos) {
-    try {
-      const response = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
-        headers: {
-          'Accept': 'application/vnd.github.v3+json'
-        }
-      });
-
-      if (response.ok) {
-        releaseData = await response.json();
-        break;
+  try {
+    const response = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
+      headers: {
+        'Accept': 'application/vnd.github.v3+json'
       }
-    } catch (e) {
-      // Network error or offline, ignore and try next
+    });
+
+    if (response.ok) {
+      releaseData = await response.json();
     }
+  } catch (e) {
+    // Network error or offline
   }
 
   if (!releaseData) {
