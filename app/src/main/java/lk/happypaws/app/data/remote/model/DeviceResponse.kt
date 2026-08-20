@@ -10,5 +10,6 @@ data class DeviceResponse(
     val fcmToken: String,
     val deviceName: String? = null,
     val platform: String,
-    val lastActiveAt: String
+    val lastActiveAt: String,
+    val isCurrent: Boolean = false
 )

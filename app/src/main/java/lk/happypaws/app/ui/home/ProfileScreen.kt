@@ -1,17 +1,13 @@
 package lk.happypaws.app.ui.home
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AccountBox
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.LocalHospital
@@ -22,22 +18,19 @@ import androidx.compose.material.icons.filled.Report
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material.icons.outlined.People
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.LoadState
+import androidx.paging.compose.collectAsLazyPagingItems
 import lk.happypaws.app.ui.home.components.ProfileHeaderCard
 import lk.happypaws.app.ui.home.components.ProfileListItem
 import lk.happypaws.app.ui.home.components.ProfileSection
@@ -47,6 +40,7 @@ import lk.happypaws.app.ui.navigation.AppNavKey
 fun ProfileScreen(
     modifier: Modifier = Modifier,
     viewModel: ProfileViewModel = hiltViewModel(),
+    communityViewModel: CommunityViewModel = hiltViewModel(),
     onLogout: () -> Unit = {},
     onNavigateTo: (AppNavKey) -> Unit = {}
 ) {
@@ -55,6 +49,11 @@ fun ProfileScreen(
     }
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    val mySortOption by communityViewModel.mySortOption.collectAsStateWithLifecycle()
+    val myPosts = communityViewModel.myPostsFlow.collectAsLazyPagingItems()
+    var sortExpanded by remember { mutableStateOf(false) }
+    val sortOptions = listOf("Recent", "Top - Daily", "Top - Monthly", "Top - Yearly", "Top - All Time", "Pending")
 
     Box(
         modifier = modifier.fillMaxSize()
@@ -80,147 +79,264 @@ fun ProfileScreen(
                 val profile = state.profile
                 val roleNames = profile.roles.map { it.role }
 
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp)
-                ) {
-                    item {
-                        ProfileHeaderCard(
-                            profile = profile,
-                            onEditProfile = { onNavigateTo(AppNavKey.EditProfile) }
+                Column(modifier = Modifier.fillMaxSize()) {
+                    TabRow(
+                        selectedTabIndex = selectedTabIndex,
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.primary
+                    ) {
+                        Tab(
+                            selected = selectedTabIndex == 0,
+                            onClick = { selectedTabIndex = 0 },
+                            text = { Text("Details", fontWeight = FontWeight.SemiBold) }
+                        )
+                        Tab(
+                            selected = selectedTabIndex == 1,
+                            onClick = { selectedTabIndex = 1 },
+                            text = { Text("Community Activity", fontWeight = FontWeight.SemiBold) }
                         )
                     }
 
-                        item {
-                            ProfileSection(title = "General") {
-                                ProfileListItem(
-                                    icon = Icons.Default.Favorite,
-                                    title = "Lifestyle Profile",
-                                    subtitle = "Update matching preferences",
-                                    onClick = { onNavigateTo(AppNavKey.LifestyleProfile) }
-                                )
-                                ProfileListItem(
-                                    icon = Icons.AutoMirrored.Filled.Assignment,
-                                    title = "My Applications",
-                                    subtitle = "Track adoption requests",
-                                    onClick = { onNavigateTo(AppNavKey.MyApplications) }
-                                )
-                                ProfileListItem(
-                                    icon = Icons.Outlined.People,
-                                    title = "Community Activity",
-                                    subtitle = "Manage your posts and updates",
-                                    onClick = { onNavigateTo(AppNavKey.CommunityActivity) }
-                                )
-                            }
-                        }
-
-                        item {
-                            ProfileSection(title = "Verification & Identity") {
-                                ProfileListItem(
-                                    icon = Icons.Default.VerifiedUser,
-                                    title = "Identity Verification (KYC)",
-                                    subtitle = if (profile.isVerified) "Verified" else "Upload documents",
-                                    onClick = { onNavigateTo(AppNavKey.KycVerification) }
-                                )
-                                ProfileListItem(
-                                    icon = Icons.Default.AccountBox,
-                                    title = "Manage Roles",
-                                    subtitle = "Become a foster, transporter, or sponsor",
-                                    onClick = { onNavigateTo(AppNavKey.RoleManagement) }
-                                )
-                            }
-                        }
-
-                        if (roleNames.contains("Foster")) {
+                    if (selectedTabIndex == 0) {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp)
+                        ) {
                             item {
-                                ProfileSection(title = "Foster Space") {
-                                    ProfileListItem(
-                                        icon = Icons.Default.Pets,
-                                        title = "Foster Dashboard",
-                                        subtitle = "Manage active placements",
-                                        onClick = { onNavigateTo(AppNavKey.FosterDashboard) }
-                                    )
-                                }
+                                ProfileHeaderCard(
+                                    profile = profile,
+                                    onEditProfile = { onNavigateTo(AppNavKey.EditProfile) }
+                                )
                             }
-                        }
 
-                        if (roleNames.contains("Transporter")) {
                             item {
-                                ProfileSection(title = "Transporter Hub") {
-                                    ProfileListItem(
-                                        icon = Icons.Default.LocalShipping,
-                                        title = "Transport Tasks",
-                                        subtitle = "Active runs and logs",
-                                        onClick = { onNavigateTo(AppNavKey.TransportTasks) }
-                                    )
-                                }
-                            }
-                        }
-
-                        if (roleNames.contains("Sponsor")) {
-                            item {
-                                ProfileSection(title = "Sponsor Dashboard") {
+                                ProfileSection(title = "General") {
                                     ProfileListItem(
                                         icon = Icons.Default.Favorite,
-                                        title = "My Sponsorships",
-                                        subtitle = "Track pledged cases",
-                                        onClick = { onNavigateTo(AppNavKey.Sponsorships) }
+                                        title = "Lifestyle Profile",
+                                        subtitle = "Update matching preferences",
+                                        onClick = { onNavigateTo(AppNavKey.LifestyleProfile) }
                                     )
-                                }
-                            }
-                        }
-
-                        if (roleNames.contains("Veterinarian")) {
-                            item {
-                                ProfileSection(title = "Veterinarian Portal") {
                                     ProfileListItem(
-                                        icon = Icons.Default.LocalHospital,
-                                        title = "Medical Consultations",
-                                        subtitle = "Triage reviews and advice",
-                                        onClick = { onNavigateTo(AppNavKey.VetConsultations) }
+                                        icon = Icons.AutoMirrored.Filled.Assignment,
+                                        title = "My Applications",
+                                        subtitle = "Track adoption requests",
+                                        onClick = { onNavigateTo(AppNavKey.MyApplications) }
+                                    )
+                                    ProfileListItem(
+                                        icon = Icons.Outlined.People,
+                                        title = "Community Activity",
+                                        subtitle = "Manage your posts and updates",
+                                        onClick = { selectedTabIndex = 1 }
                                     )
                                 }
                             }
-                        }
 
-                        item {
-                            ProfileSection(title = "Account & Security") {
+                            item {
+                                ProfileSection(title = "Verification & Identity") {
+                                    ProfileListItem(
+                                        icon = Icons.Default.VerifiedUser,
+                                        title = "Identity Verification (KYC)",
+                                        subtitle = if (profile.isVerified) "Verified" else "Upload documents",
+                                        onClick = { onNavigateTo(AppNavKey.KycVerification) }
+                                    )
+                                    ProfileListItem(
+                                        icon = Icons.Default.AccountBox,
+                                        title = "Manage Roles",
+                                        subtitle = "Become a foster, transporter, or sponsor",
+                                        onClick = { onNavigateTo(AppNavKey.RoleManagement) }
+                                    )
+                                }
+                            }
+
+                            if (roleNames.contains("Foster")) {
+                                item {
+                                    ProfileSection(title = "Foster Space") {
+                                        ProfileListItem(
+                                            icon = Icons.Default.Pets,
+                                            title = "Foster Dashboard",
+                                            subtitle = "Manage active placements",
+                                            onClick = { onNavigateTo(AppNavKey.FosterDashboard) }
+                                        )
+                                    }
+                                }
+                            }
+
+                            if (roleNames.contains("Transporter")) {
+                                item {
+                                    ProfileSection(title = "Transporter Hub") {
+                                        ProfileListItem(
+                                            icon = Icons.Default.LocalShipping,
+                                            title = "Transport Tasks",
+                                            subtitle = "Active runs and logs",
+                                            onClick = { onNavigateTo(AppNavKey.TransportTasks) }
+                                        )
+                                    }
+                                }
+                            }
+
+                            if (roleNames.contains("Sponsor")) {
+                                item {
+                                    ProfileSection(title = "Sponsor Dashboard") {
+                                        ProfileListItem(
+                                            icon = Icons.Default.Favorite,
+                                            title = "My Sponsorships",
+                                            subtitle = "Track pledged cases",
+                                            onClick = { onNavigateTo(AppNavKey.Sponsorships) }
+                                        )
+                                    }
+                                }
+                            }
+
+                            if (roleNames.contains("Veterinarian")) {
+                                item {
+                                    ProfileSection(title = "Veterinarian Portal") {
+                                        ProfileListItem(
+                                            icon = Icons.Default.LocalHospital,
+                                            title = "Medical Consultations",
+                                            subtitle = "Triage reviews and advice",
+                                            onClick = { onNavigateTo(AppNavKey.VetConsultations) }
+                                        )
+                                    }
+                                }
+                            }
+
+                            item {
+                                ProfileSection(title = "Account & Security") {
+                                    ProfileListItem(
+                                        icon = Icons.Default.Lock,
+                                        title = "Change Password",
+                                        onClick = { onNavigateTo(AppNavKey.ChangePassword) }
+                                    )
+                                    ProfileListItem(
+                                        icon = Icons.Default.Devices,
+                                        title = "Registered Devices",
+                                        onClick = { onNavigateTo(AppNavKey.RegisteredDevices) }
+                                    )
+                                }
+                            }
+
+                            item {
+                                Spacer(modifier = Modifier.height(16.dp))
                                 ProfileListItem(
-                                    icon = Icons.Default.Lock,
-                                    title = "Change Password",
-                                    onClick = { onNavigateTo(AppNavKey.ChangePassword) }
+                                    icon = Icons.AutoMirrored.Filled.ExitToApp,
+                                    title = "Log Out",
+                                    onClick = { viewModel.logout(onLogout) },
+                                    iconTint = MaterialTheme.colorScheme.error,
+                                    iconBackgroundColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
+                                    showArrow = false
                                 )
-                                ProfileListItem(
-                                    icon = Icons.Default.Devices,
-                                    title = "Registered Devices",
-                                    onClick = { onNavigateTo(AppNavKey.RegisteredDevices) }
+                                Spacer(modifier = Modifier.height(24.dp))
+                                Text(
+                                    text = "HappyPaws v1.0.0",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 32.dp),
+                                    textAlign = TextAlign.Center
                                 )
                             }
                         }
-
-                        item {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            ProfileListItem(
-                                icon = Icons.AutoMirrored.Filled.ExitToApp,
-                                title = "Log Out",
-                                onClick = { viewModel.logout(onLogout) },
-                                iconTint = MaterialTheme.colorScheme.error,
-                                iconBackgroundColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
-                                showArrow = false
-                            )
-                            Spacer(modifier = Modifier.height(24.dp))
-                            Text(
-                                text = "HappyPaws v1.0.0",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f),
+                    } else {
+                        // Community Activity Tab
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(top = 8.dp)
+                        ) {
+                            Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(bottom = 32.dp),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                            )
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "My Activity",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Box {
+                                    OutlinedButton(
+                                        onClick = { sortExpanded = true },
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                        modifier = Modifier.height(36.dp)
+                                    ) {
+                                        Text(text = mySortOption, style = MaterialTheme.typography.labelMedium)
+                                        Icon(Icons.Default.ArrowDropDown, contentDescription = "Sort")
+                                    }
+                                    DropdownMenu(
+                                        expanded = sortExpanded,
+                                        onDismissRequest = { sortExpanded = false }
+                                    ) {
+                                        sortOptions.forEach { option ->
+                                            DropdownMenuItem(
+                                                text = { Text(option) },
+                                                onClick = {
+                                                    communityViewModel.updateMySortOption(option)
+                                                    sortExpanded = false
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                items(myPosts.itemCount) { index ->
+                                    val post = myPosts[index]
+                                    if (post != null) {
+                                        CommunityPostCard(post = post)
+                                    }
+                                }
+
+                                myPosts.apply {
+                                    when {
+                                        loadState.refresh is LoadState.Loading -> {
+                                            item {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(32.dp),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    CircularProgressIndicator()
+                                                }
+                                            }
+                                        }
+                                        loadState.append is LoadState.Loading -> {
+                                            item {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(16.dp),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    CircularProgressIndicator()
+                                                }
+                                            }
+                                        }
+                                        loadState.refresh is LoadState.Error -> {
+                                            item {
+                                                Text(
+                                                    text = "Error loading your posts",
+                                                    color = MaterialTheme.colorScheme.error,
+                                                    modifier = Modifier.padding(16.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
         }
     }
+}

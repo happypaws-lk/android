@@ -57,6 +57,9 @@ sealed interface AppNavKey {
     data object RoleManagement : AppNavKey
 
     @Serializable
+    data class RequestRole(val roleValue: Int) : AppNavKey
+
+    @Serializable
     data object ChangePassword : AppNavKey
 
     @Serializable

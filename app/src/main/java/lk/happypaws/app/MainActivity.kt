@@ -142,6 +142,7 @@ class MainActivity : ComponentActivity() {
                     currentRoute?.contains("MyApplications") == true ||
                     currentRoute?.contains("CommunityActivity") == true ||
                     currentRoute?.contains("RoleManagement") == true ||
+                    currentRoute?.contains("RequestRole") == true ||
                     currentRoute?.contains("ChangePassword") == true ||
                     currentRoute?.contains("RegisteredDevices") == true ||
                     currentRoute?.contains("FosterDashboard") == true ||
@@ -336,7 +337,9 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             composable<AppNavKey.KycVerification> {
-                                lk.happypaws.app.ui.profile.StubScreen("KYC Verification") { navController.popBackStack() }
+                                lk.happypaws.app.ui.profile.KycVerificationScreen(
+                                    onNavigateBack = { navController.popBackStack() }
+                                )
                             }
                             composable<AppNavKey.LifestyleProfile> {
                                 lk.happypaws.app.ui.profile.LifestyleProfileScreen(
@@ -351,10 +354,22 @@ class MainActivity : ComponentActivity() {
                                 lk.happypaws.app.ui.profile.StubScreen("Community Activity") { navController.popBackStack() }
                             }
                             composable<AppNavKey.RoleManagement> {
-                                lk.happypaws.app.ui.profile.StubScreen("Manage Roles") { navController.popBackStack() }
+                                lk.happypaws.app.ui.profile.ManageRolesScreen(
+                                    onNavigateBack = { navController.popBackStack() },
+                                    onNavigateToRequestRole = { roleValue ->
+                                        navController.navigate(AppNavKey.RequestRole(roleValue))
+                                    }
+                                )
+                            }
+                            composable<AppNavKey.RequestRole> {
+                                lk.happypaws.app.ui.profile.RequestRoleScreen(
+                                    onNavigateBack = { navController.popBackStack() }
+                                )
                             }
                             composable<AppNavKey.ChangePassword> {
-                                lk.happypaws.app.ui.profile.StubScreen("Change Password") { navController.popBackStack() }
+                                lk.happypaws.app.ui.profile.ChangePasswordScreen(
+                                    onNavigateBack = { navController.popBackStack() }
+                                )
                             }
                             composable<AppNavKey.RegisteredDevices> {
                                 lk.happypaws.app.ui.profile.RegisteredDevicesScreen(

@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.location.Geocoder
 import android.net.Uri
 import android.os.Looper
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
@@ -153,10 +154,14 @@ fun PhotoCaptureStep(
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Button(
                     onClick = {
-                        val file = File.createTempFile("rescue_", ".jpg", context.cacheDir)
-                        val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
-                        tempUri = uri
-                        cameraLauncher.launch(uri)
+                        try {
+                            val file = File.createTempFile("rescue_", ".jpg", context.cacheDir)
+                            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                            tempUri = uri
+                            cameraLauncher.launch(uri)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Cannot open camera: ${e.localizedMessage ?: "Unknown error"}", Toast.LENGTH_SHORT).show()
+                        }
                     },
                     modifier = Modifier.weight(1f).height(100.dp),
                     shape = RoundedCornerShape(12.dp)
@@ -209,7 +214,9 @@ fun LocationDetectionStep(
 
     LaunchedEffect(Unit) {
         if (uiState.latitude == null) {
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            val hasFine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+            val hasCoarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+            if (hasFine || hasCoarse) {
                 fetchLocation(context, onLocationFound, { isFetching = it })
             } else {
                 locationPermissionLauncher.launch(
@@ -263,32 +270,56 @@ private fun fetchLocation(
     onLocationFound: (Double, Double, String) -> Unit,
     setFetching: (Boolean) -> Unit
 ) {
+    val hasFine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+    val hasCoarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+    if (!hasFine && !hasCoarse) {
+        setFetching(false)
+        return
+    }
+
     setFetching(true)
     val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
-    val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 100).build()
+    val priority = if (hasFine) Priority.PRIORITY_HIGH_ACCURACY else Priority.PRIORITY_BALANCED_POWER_ACCURACY
+    val locationRequest = LocationRequest.Builder(priority, 100).build()
     
     try {
+        fusedLocationClient.lastLocation.addOnSuccessListener { lastLoc ->
+            if (lastLoc != null) {
+                resolveLocation(context, lastLoc.latitude, lastLoc.longitude, onLocationFound)
+                setFetching(false)
+            }
+        }
+
         fusedLocationClient.requestLocationUpdates(locationRequest, object : LocationCallback() {
             override fun onLocationResult(p0: LocationResult) {
                 p0.lastLocation?.let { location ->
                     fusedLocationClient.removeLocationUpdates(this)
-                    val geocoder = Geocoder(context, Locale.getDefault())
-                    try {
-                        val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
-                        val name = addresses?.firstOrNull()?.let { 
-                            it.featureName ?: it.locality ?: it.subAdminArea ?: "Unknown Location" 
-                        } ?: "Unknown Location"
-                        
-                        onLocationFound(location.latitude, location.longitude, name)
-                    } catch (e: Exception) {
-                        onLocationFound(location.latitude, location.longitude, "Unknown Location")
-                    }
+                    resolveLocation(context, location.latitude, location.longitude, onLocationFound)
                     setFetching(false)
                 }
             }
         }, Looper.getMainLooper())
     } catch (e: SecurityException) {
         setFetching(false)
+    }
+}
+
+private fun resolveLocation(
+    context: Context,
+    latitude: Double,
+    longitude: Double,
+    onLocationFound: (Double, Double, String) -> Unit
+) {
+    try {
+        val geocoder = Geocoder(context, Locale.getDefault())
+        val addresses = geocoder.getFromLocation(latitude, longitude, 1)
+        val name = addresses?.firstOrNull()?.let { 
+            it.featureName ?: it.locality ?: it.subAdminArea ?: "Unknown Location" 
+        } ?: "Unknown Location"
+        onLocationFound(latitude, longitude, name)
+    } catch (e: Exception) {
+        onLocationFound(latitude, longitude, "Unknown Location")
     }
 }
 

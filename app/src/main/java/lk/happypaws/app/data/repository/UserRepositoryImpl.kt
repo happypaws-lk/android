@@ -8,8 +8,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import lk.happypaws.app.data.local.TokenManager
 import lk.happypaws.app.data.local.UserManager
 import lk.happypaws.app.data.remote.api.UserApi
+import lk.happypaws.app.data.remote.model.DeviceRegistrationRequest
 import lk.happypaws.app.data.remote.model.MeProfileResponse
 import lk.happypaws.app.data.remote.model.UserProfileResponse
 import lk.happypaws.app.domain.repository.UserRepository
@@ -22,7 +24,8 @@ import javax.inject.Singleton
 @Singleton
 class UserRepositoryImpl @Inject constructor(
     private val userApi: UserApi,
-    private val userManager: UserManager
+    private val userManager: UserManager,
+    private val tokenManager: TokenManager
 ) : UserRepository {
 
     private val _currentUser = MutableStateFlow<UserProfileResponse?>(null)
@@ -237,6 +240,23 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun registerDevice(fcmToken: String, deviceName: String?): Result<lk.happypaws.app.data.remote.model.DeviceResponse> = withContext(Dispatchers.IO) {
+        try {
+            val request = DeviceRegistrationRequest(fcmToken, deviceName, "Android")
+            val response = userApi.registerDevice(request)
+            if (response.isSuccessful && response.body() != null) {
+                val device = response.body()!!
+                tokenManager.saveCurrentDeviceId(device.id)
+                Result.success(device)
+            } else {
+                val errorMsg = parseErrorMessage(response) ?: "Failed to register device (${response.code()})"
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun removeDevice(id: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val response = userApi.removeDevice(id)
@@ -244,6 +264,84 @@ class UserRepositoryImpl @Inject constructor(
                 Result.success(Unit)
             } else {
                 val errorMsg = parseErrorMessage(response) ?: "Failed to remove device (${response.code()})"
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getKycDocuments(): Result<List<lk.happypaws.app.data.remote.model.KycDocumentResponse>> {
+        return try {
+            val response = userApi.getKycDocuments()
+            if (response.isSuccessful) {
+                Result.success(response.body() ?: emptyList())
+            } else {
+                val errorMsg = parseErrorMessage(response) ?: "Failed to fetch KYC documents (${response.code()})"
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun uploadKycDocument(
+        documentType: lk.happypaws.app.domain.model.DocumentType,
+        bytes: ByteArray,
+        filename: String,
+        mimeType: String
+    ): Result<lk.happypaws.app.data.remote.model.KycDocumentResponse> {
+        return try {
+            val requestBody = bytes.toRequestBody(mimeType.toMediaTypeOrNull())
+            val part = MultipartBody.Part.createFormData("document", filename, requestBody)
+            val response = userApi.uploadKycDocument(documentType.apiValue, part)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                val errorMsg = parseErrorMessage(response) ?: "Failed to upload document (${response.code()})"
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getRoleRequests(): Result<List<lk.happypaws.app.data.remote.model.RoleRequestResponse>> {
+        return try {
+            val response = userApi.getRoleRequests()
+            if (response.isSuccessful) {
+                Result.success(response.body() ?: emptyList())
+            } else {
+                val errorMsg = parseErrorMessage(response) ?: "Failed to fetch role requests (${response.code()})"
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun submitRoleRequest(
+        role: lk.happypaws.app.domain.model.UserRole,
+        documentType: lk.happypaws.app.domain.model.DocumentType,
+        justification: String?,
+        bytes: ByteArray,
+        filename: String,
+        mimeType: String
+    ): Result<lk.happypaws.app.data.remote.model.RoleRequestResponse> {
+        return try {
+            val requestBody = bytes.toRequestBody(mimeType.toMediaTypeOrNull())
+            val part = MultipartBody.Part.createFormData("document", filename, requestBody)
+            val justificationBody = justification?.toRequestBody("text/plain".toMediaTypeOrNull())
+            val response = userApi.submitRoleRequest(
+                role = role.name.lowercase().replaceFirstChar { it.uppercase() },
+                documentType = documentType.apiValue,
+                document = part,
+                justification = justificationBody
+            )
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                val errorMsg = parseErrorMessage(response) ?: "Failed to submit role request (${response.code()})"
                 Result.failure(Exception(errorMsg))
             }
         } catch (e: Exception) {

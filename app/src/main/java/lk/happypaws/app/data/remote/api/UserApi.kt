@@ -2,14 +2,18 @@ package lk.happypaws.app.data.remote.api
 
 import lk.happypaws.app.data.remote.model.AvatarUploadResponse
 import lk.happypaws.app.data.remote.model.ConfirmEmailChangeRequest
+import lk.happypaws.app.data.remote.model.DeviceRegistrationRequest
 import lk.happypaws.app.data.remote.model.DeviceResponse
+import lk.happypaws.app.data.remote.model.KycDocumentResponse
 import lk.happypaws.app.data.remote.model.LifestyleProfileRequest
 import lk.happypaws.app.data.remote.model.LifestyleProfileResponse
 import lk.happypaws.app.data.remote.model.MeProfileResponse
 import lk.happypaws.app.data.remote.model.RequestEmailChangeRequest
+import lk.happypaws.app.data.remote.model.RoleRequestResponse
 import lk.happypaws.app.data.remote.model.UpdateMeProfileRequest
 import lk.happypaws.app.data.remote.model.UserProfileResponse
 import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -19,6 +23,7 @@ import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Part
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface UserApi {
 
@@ -53,7 +58,32 @@ interface UserApi {
     @GET("api/v1/users/me/devices")
     suspend fun getDevices(): Response<List<DeviceResponse>>
 
+    @POST("api/v1/users/me/devices")
+    suspend fun registerDevice(@Body request: DeviceRegistrationRequest): Response<DeviceResponse>
+
     @DELETE("api/v1/users/me/devices/{id}")
     suspend fun removeDevice(@Path("id") id: String): Response<Unit>
+
+    @GET("api/v1/users/me/kyc")
+    suspend fun getKycDocuments(): Response<List<KycDocumentResponse>>
+
+    @Multipart
+    @POST("api/v1/users/me/kyc")
+    suspend fun uploadKycDocument(
+        @Query("documentType") documentType: String,
+        @Part document: MultipartBody.Part
+    ): Response<KycDocumentResponse>
+
+    @GET("api/v1/users/me/role-requests")
+    suspend fun getRoleRequests(): Response<List<RoleRequestResponse>>
+
+    @Multipart
+    @POST("api/v1/users/me/role-requests")
+    suspend fun submitRoleRequest(
+        @Query("role") role: String,
+        @Query("documentType") documentType: String,
+        @Part document: MultipartBody.Part,
+        @Part("justification") justification: RequestBody?
+    ): Response<RoleRequestResponse>
 
 }

@@ -21,11 +21,16 @@ class AuthInterceptor @Inject constructor(
 
         val requestBuilder = request.newBuilder()
         val token = tokenManager.getAccessTokenSync()
-        
+
         if (!token.isNullOrEmpty()) {
             requestBuilder.addHeader("Authorization", "Bearer $token")
         }
-        
+
+        val deviceId = tokenManager.getCurrentDeviceIdSync()
+        if (!deviceId.isNullOrEmpty()) {
+            requestBuilder.addHeader("X-Device-Id", deviceId)
+        }
+
         return chain.proceed(requestBuilder.build())
     }
 }

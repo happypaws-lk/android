@@ -58,6 +58,7 @@ class TokenManager @Inject constructor(@ApplicationContext private val context: 
             preferences.remove(USER_ID_KEY)
             preferences.remove(USER_ROLE_KEY)
             preferences.remove(ONBOARDING_COMPLETED_KEY)
+            preferences.remove(CURRENT_DEVICE_ID_KEY)
         }
     }
 
@@ -112,11 +113,35 @@ class TokenManager @Inject constructor(@ApplicationContext private val context: 
         dataStore.data.map { it[ONBOARDING_COMPLETED_KEY] ?: false }.first()
     }
 
+    val currentDeviceIdFlow: Flow<String?> = dataStore.data.map { preferences ->
+        preferences[CURRENT_DEVICE_ID_KEY]
+    }
+
+    fun getCurrentDeviceIdSync(): String? = runBlocking {
+        dataStore.data.map { it[CURRENT_DEVICE_ID_KEY] }.first()
+    }
+
+    suspend fun saveCurrentDeviceId(deviceId: String) {
+        dataStore.edit { preferences ->
+            preferences[CURRENT_DEVICE_ID_KEY] = deviceId
+        }
+    }
+
+    fun getInstallationId(): String = runBlocking {
+        val existing = dataStore.data.map { it[INSTALLATION_ID_KEY] }.first()
+        if (!existing.isNullOrEmpty()) return@runBlocking existing
+        val newId = java.util.UUID.randomUUID().toString()
+        dataStore.edit { it[INSTALLATION_ID_KEY] = newId }
+        newId
+    }
+
     companion object {
         private val ACCESS_TOKEN_KEY = stringPreferencesKey("access_token")
         private val REFRESH_TOKEN_KEY = stringPreferencesKey("refresh_token")
         private val USER_ID_KEY = stringPreferencesKey("user_id")
         private val USER_ROLE_KEY = stringPreferencesKey("user_role")
         private val ONBOARDING_COMPLETED_KEY = androidx.datastore.preferences.core.booleanPreferencesKey("onboarding_completed")
+        private val CURRENT_DEVICE_ID_KEY = stringPreferencesKey("current_device_id")
+        private val INSTALLATION_ID_KEY = stringPreferencesKey("installation_id")
     }
 }
