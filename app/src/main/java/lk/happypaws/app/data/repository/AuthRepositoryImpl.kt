@@ -12,6 +12,7 @@ import lk.happypaws.app.data.local.TokenManager
 import lk.happypaws.app.data.local.UserManager
 import lk.happypaws.app.data.remote.api.AuthApi
 import lk.happypaws.app.data.remote.model.AuthResponse
+import lk.happypaws.app.data.remote.model.ChangePasswordRequest
 import lk.happypaws.app.data.remote.model.ForgotPasswordRequest
 import lk.happypaws.app.data.remote.model.LoginRequest
 import lk.happypaws.app.data.remote.model.OtpRequest
@@ -23,6 +24,7 @@ import lk.happypaws.app.data.remote.model.VerifyResetCodeRequest
 import lk.happypaws.app.domain.repository.AuthRepository
 import lk.happypaws.app.util.findActivity
 import lk.happypaws.app.util.JwtDecoder
+import lk.happypaws.app.data.remote.util.NetworkErrorParser
 import lk.happypaws.app.data.remote.util.safeApiCall
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -101,6 +103,22 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun resetPassword(email: String, resetToken: String, newPassword: String): Result<Unit> {
         return safeApiCall(defaultAuthError = "Failed to reset password.") {
             authApi.resetPassword(ResetPasswordRequest(email, resetToken, newPassword))
+        }
+    }
+
+    override suspend fun changePassword(currentPassword: String, newPassword: String): Result<Unit> {
+        return try {
+            val response = authApi.changePassword(ChangePasswordRequest(currentPassword, newPassword))
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else if (response.code() == 400) {
+                val body = response.errorBody()?.string()?.trim()?.trim('"')
+                Result.failure(Exception(body?.takeIf { it.isNotBlank() } ?: "Current password is incorrect."))
+            } else {
+                Result.failure(Exception(NetworkErrorParser.parseResponseError(response)))
+            }
+        } catch (e: Throwable) {
+            Result.failure(Exception(NetworkErrorParser.parseException(e), e))
         }
     }
 

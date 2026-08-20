@@ -145,3 +145,4 @@ dependencies {
 dependencies { 
     implementation("com.google.android.gms:play-services-location:21.0.1") 
 }
+dependencies { implementation("androidx.paging:paging-compose:3.3.5") }

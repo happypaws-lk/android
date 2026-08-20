@@ -223,13 +223,24 @@ fun DeviceItem(device: DeviceResponse, onLogoutClick: () -> Unit) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                if (device.isCurrent) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "This device",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
-            IconButton(onClick = onLogoutClick) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Log out device",
-                    tint = MaterialTheme.colorScheme.error
-                )
+            if (!device.isCurrent) {
+                IconButton(onClick = onLogoutClick) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Log out device",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }

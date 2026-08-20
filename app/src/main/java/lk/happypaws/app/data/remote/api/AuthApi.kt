@@ -1,6 +1,7 @@
 package lk.happypaws.app.data.remote.api
 
 import lk.happypaws.app.data.remote.model.AuthResponse
+import lk.happypaws.app.data.remote.model.ChangePasswordRequest
 import lk.happypaws.app.data.remote.model.ForgotPasswordRequest
 import lk.happypaws.app.data.remote.model.LoginRequest
 import lk.happypaws.app.data.remote.model.OtpRequest
@@ -69,6 +70,11 @@ interface AuthApi {
     @POST("api/v1/auth/revoke")
     suspend fun revokeToken(
         @Body request: RevokeRequest
+    ): Response<Unit>
+
+    @POST("api/v1/auth/change-password")
+    suspend fun changePassword(
+        @Body request: ChangePasswordRequest
     ): Response<Unit>
 
 }

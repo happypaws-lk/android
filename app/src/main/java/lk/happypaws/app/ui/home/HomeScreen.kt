@@ -26,7 +26,7 @@ fun HomeScreen(
         when (currentTab) {
             HomeNavKey.CommunityTab -> {
                 CommunityScreen(
-                    viewModel = viewModel,
+                    homeViewModel = viewModel,
                     onLogout = onLogout
                 )
             }

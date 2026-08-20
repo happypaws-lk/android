@@ -1,5 +1,6 @@
 package lk.happypaws.app.ui.profile
 
+import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -7,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import lk.happypaws.app.data.local.TokenManager
 import lk.happypaws.app.data.remote.model.DeviceResponse
 import lk.happypaws.app.domain.repository.UserRepository
 import javax.inject.Inject
@@ -19,7 +21,8 @@ sealed class RegisteredDevicesUiState {
 
 @HiltViewModel
 class RegisteredDevicesViewModel @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<RegisteredDevicesUiState>(RegisteredDevicesUiState.Loading)
@@ -29,7 +32,13 @@ class RegisteredDevicesViewModel @Inject constructor(
     val isRemoving: StateFlow<Boolean> = _isRemoving.asStateFlow()
 
     init {
-        fetchDevices()
+        viewModelScope.launch {
+            userRepository.registerDevice(
+                fcmToken = tokenManager.getInstallationId(),
+                deviceName = Build.MODEL
+            )
+            fetchDevices()
+        }
     }
 
     fun fetchDevices() {
@@ -37,7 +46,8 @@ class RegisteredDevicesViewModel @Inject constructor(
             _uiState.value = RegisteredDevicesUiState.Loading
             userRepository.getDevices().fold(
                 onSuccess = { devices ->
-                    _uiState.value = RegisteredDevicesUiState.Success(devices)
+                    val sorted = devices.sortedByDescending { it.isCurrent }
+                    _uiState.value = RegisteredDevicesUiState.Success(sorted)
                 },
                 onFailure = { error ->
                     _uiState.value = RegisteredDevicesUiState.Error(error.message ?: "Failed to fetch devices")

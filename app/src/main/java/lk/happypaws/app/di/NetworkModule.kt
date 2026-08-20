@@ -107,6 +107,10 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideCommunityApi(retrofit: Retrofit): lk.happypaws.app.ui.home.CommunityApi = retrofit.create(lk.happypaws.app.ui.home.CommunityApi::class.java)
+
+    @Provides
+    @Singleton
     fun provideUserApi(retrofit: Retrofit): UserApi {
         return retrofit.create(UserApi::class.java)
     }
