@@ -1,13 +1,16 @@
 package lk.happypaws.app.data.repository
 
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import lk.happypaws.app.data.local.UserManager
 import lk.happypaws.app.data.remote.api.UserApi
+import lk.happypaws.app.data.remote.model.MeProfileResponse
 import lk.happypaws.app.data.remote.model.UserProfileResponse
 import lk.happypaws.app.domain.repository.UserRepository
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -148,6 +151,119 @@ class UserRepositoryImpl @Inject constructor(
             }
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    override suspend fun requestEmailChange(newEmail: String, currentPassword: String): Result<Unit> {
+        return try {
+            val request = lk.happypaws.app.data.remote.model.RequestEmailChangeRequest(newEmail, currentPassword)
+            val response = userApi.requestEmailChange(request)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                val errorMsg = parseErrorMessage(response) ?: "Failed to send verification code (${response.code()})"
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun confirmEmailChange(newEmail: String, code: String): Result<MeProfileResponse> {
+        return try {
+            val request = lk.happypaws.app.data.remote.model.ConfirmEmailChangeRequest(newEmail, code)
+            val response = userApi.confirmEmailChange(request)
+            if (response.isSuccessful && response.body() != null) {
+                val updated = response.body()!!
+                userManager.saveMeProfile(updated)
+                _currentMeProfile.value = updated
+                refreshUser()
+                Result.success(updated)
+            } else {
+                val errorMsg = parseErrorMessage(response) ?: "Invalid or expired verification code (${response.code()})"
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getLifestyleProfile(): Result<lk.happypaws.app.data.remote.model.LifestyleProfileResponse?> {
+        return try {
+            val response = userApi.getLifestyleProfile()
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body())
+            } else if (response.code() == 404) {
+                // Profile not created yet
+                Result.success(null)
+            } else {
+                val errorMsg = parseErrorMessage(response) ?: "Failed to load lifestyle profile (${response.code()})"
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun upsertLifestyleProfile(
+        request: lk.happypaws.app.data.remote.model.LifestyleProfileRequest
+    ): Result<lk.happypaws.app.data.remote.model.LifestyleProfileResponse> {
+        return try {
+            val response = userApi.upsertLifestyleProfile(request)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else if (response.code() == 403) {
+                Result.failure(Exception("Identity verification (KYC) is required to save your lifestyle profile."))
+            } else {
+                val errorMsg = parseErrorMessage(response) ?: "Failed to save lifestyle profile (${response.code()})"
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getDevices(): Result<List<lk.happypaws.app.data.remote.model.DeviceResponse>> = withContext(Dispatchers.IO) {
+        try {
+            val response = userApi.getDevices()
+            if (response.isSuccessful) {
+                Result.success(response.body() ?: emptyList())
+            } else {
+                val errorMsg = parseErrorMessage(response) ?: "Failed to fetch devices (${response.code()})"
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun removeDevice(id: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val response = userApi.removeDevice(id)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                val errorMsg = parseErrorMessage(response) ?: "Failed to remove device (${response.code()})"
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    private fun parseErrorMessage(response: retrofit2.Response<*>): String? {
+        return try {
+            val errorJson = response.errorBody()?.string() ?: return null
+            if (errorJson.startsWith("\"") && errorJson.endsWith("\"")) {
+                errorJson.trim('"')
+            } else {
+                val json = org.json.JSONObject(errorJson)
+                val detail = if (json.has("detail")) json.getString("detail") else null
+                val title = if (json.has("title")) json.getString("title") else null
+                detail ?: title
+            }
+        } catch (e: Exception) {
+            null
         }
     }
 }

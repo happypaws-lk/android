@@ -47,14 +47,24 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideGson(): com.google.gson.Gson {
+        return com.google.gson.GsonBuilder()
+            .registerTypeAdapter(lk.happypaws.app.data.remote.model.HomeSize::class.java, lk.happypaws.app.data.remote.model.HomeSizeAdapter())
+            .registerTypeAdapter(lk.happypaws.app.data.remote.model.ActivityLevel::class.java, lk.happypaws.app.data.remote.model.ActivityLevelAdapter())
+            .create()
+    }
+
+    @Provides
+    @Singleton
     @Named("AuthRetrofit")
     fun provideAuthRetrofit(
-        @Named("AuthOkHttpClient") okHttpClient: OkHttpClient
+        @Named("AuthOkHttpClient") okHttpClient: OkHttpClient,
+        gson: com.google.gson.Gson
     ): Retrofit {
         return Retrofit.Builder()
             .baseUrl(BuildConfig.API_BASE_URL)
             .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
     }
 
@@ -87,11 +97,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
+    fun provideRetrofit(okHttpClient: OkHttpClient, gson: com.google.gson.Gson): Retrofit {
         return Retrofit.Builder()
             .baseUrl(BuildConfig.API_BASE_URL)
             .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
     }
 
@@ -103,8 +113,14 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideRescueApi(retrofit: Retrofit): lk.happypaws.app.data.remote.api.RescueApi {
+        return retrofit.create(lk.happypaws.app.data.remote.api.RescueApi::class.java)
+    }
+
+    @Provides
+    @Singleton
     @Named("MainRetrofit")
-    fun provideMainRetrofit(okHttpClient: OkHttpClient): Retrofit = provideRetrofit(okHttpClient)
+    fun provideMainRetrofit(okHttpClient: OkHttpClient, gson: com.google.gson.Gson): Retrofit = provideRetrofit(okHttpClient, gson)
 
     private fun OkHttpClient.Builder.configureDebugSsl(): OkHttpClient.Builder {
         if (BuildConfig.DEBUG) {

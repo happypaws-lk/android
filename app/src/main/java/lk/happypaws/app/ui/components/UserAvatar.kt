@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,6 +32,17 @@ fun resolveAvatarUrl(avatarKey: String?): String? {
     val base = BuildConfig.STORAGE_BASE_URL.trimEnd('/')
     val key = avatarKey.trimStart('/')
     return "$base/$key"
+}
+
+fun getAvatarInitials(name: String): String {
+    val trimmed = name.trim()
+    if (trimmed.isEmpty()) return ""
+    val parts = trimmed.split("\\s+".toRegex()).filter { it.isNotBlank() }
+    return when {
+        parts.size >= 2 -> "${parts[0].take(1)}${parts[1].take(1)}".uppercase()
+        parts.isNotEmpty() -> parts[0].take(2).uppercase()
+        else -> ""
+    }
 }
 
 @Composable
@@ -80,22 +92,28 @@ private fun AvatarFallback(
     size: Dp,
     contentColor: Color
 ) {
-    val initial = name.trim().take(1).uppercase()
-    if (initial.isNotBlank()) {
-        Text(
-            text = initial,
-            style = MaterialTheme.typography.titleMedium.copy(
-                fontSize = (size.value * 0.42f).sp,
-                fontWeight = FontWeight.Bold
-            ),
-            color = contentColor
-        )
-    } else {
-        Icon(
-            imageVector = Icons.Default.AccountCircle,
-            contentDescription = null,
-            tint = contentColor,
-            modifier = Modifier.size(size * 0.6f)
-        )
+    val initials = getAvatarInitials(name)
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        if (initials.isNotBlank()) {
+            Text(
+                text = initials,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontSize = (size.value * (if (initials.length > 1) 0.38f else 0.42f)).sp,
+                    fontWeight = FontWeight.Bold
+                ),
+                color = contentColor,
+                textAlign = TextAlign.Center
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Default.AccountCircle,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(size * 0.6f)
+            )
+        }
     }
 }

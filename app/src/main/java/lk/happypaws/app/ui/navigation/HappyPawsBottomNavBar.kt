@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -36,12 +37,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import lk.happypaws.app.ui.components.UserAvatar
 
 sealed class BottomNavItem(
     val route: HomeNavKey,
@@ -66,6 +69,8 @@ fun HappyPawsBottomNavBar(
     currentRoute: HomeNavKey,
     onTabSelected: (BottomNavItem) -> Unit,
     onFabClick: () -> Unit,
+    userAvatarKey: String? = null,
+    userName: String = "",
     modifier: Modifier = Modifier
 ) {
     // Custom colors from the provided design image
@@ -124,6 +129,8 @@ fun HappyPawsBottomNavBar(
                     isSelected = currentRoute == BottomNavItem.Profile.route,
                     activeColor = activeTeal,
                     inactiveColor = inactiveGrey,
+                    userAvatarKey = userAvatarKey,
+                    userName = userName,
                     onClick = { onTabSelected(BottomNavItem.Profile) }
                 )
             }
@@ -155,7 +162,9 @@ private fun NavItemCell(
     isSelected: Boolean,
     activeColor: Color,
     inactiveColor: Color,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    userAvatarKey: String? = null,
+    userName: String = ""
 ) {
     val animatedColor by animateColorAsState(
         targetValue = if (isSelected) activeColor else inactiveColor,
@@ -179,14 +188,36 @@ private fun NavItemCell(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(
-            imageVector = item.icon,
-            contentDescription = item.title,
-            tint = animatedColor,
-            modifier = Modifier
-                .scale(animatedScale)
-                .size(24.dp)
-        )
+        if (item == BottomNavItem.Profile && !userAvatarKey.isNullOrBlank()) {
+            Box(
+                modifier = Modifier
+                    .scale(animatedScale)
+                    .size(26.dp)
+                    .border(
+                        width = if (isSelected) 2.dp else 1.dp,
+                        color = animatedColor,
+                        shape = CircleShape
+                    )
+                    .padding(2.dp)
+                    .clip(CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                UserAvatar(
+                    name = userName,
+                    avatarKey = userAvatarKey,
+                    size = 22.dp
+                )
+            }
+        } else {
+            Icon(
+                imageVector = item.icon,
+                contentDescription = item.title,
+                tint = animatedColor,
+                modifier = Modifier
+                    .scale(animatedScale)
+                    .size(24.dp)
+            )
+        }
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = item.title,

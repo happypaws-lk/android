@@ -28,6 +28,12 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindRescueRepository(
+        rescueRepositoryImpl: lk.happypaws.app.data.repository.RescueRepositoryImpl
+    ): lk.happypaws.app.domain.repository.RescueRepository
+
+    @Binds
+    @Singleton
     abstract fun bindHealthRepository(
         healthRepositoryImpl: lk.happypaws.app.data.repository.HealthRepositoryImpl
     ): lk.happypaws.app.domain.repository.HealthRepository

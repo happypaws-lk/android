@@ -7,7 +7,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import lk.happypaws.app.data.remote.model.MeProfileResponse
 import lk.happypaws.app.domain.repository.HealthRepository
+import lk.happypaws.app.domain.repository.UserRepository
 import javax.inject.Inject
 
 enum class ConnectionState {
@@ -18,11 +20,14 @@ enum class ConnectionState {
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val healthRepository: HealthRepository
+    private val healthRepository: HealthRepository,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _connectionState = MutableStateFlow(ConnectionState.LOADING)
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
+
+    val meProfile: StateFlow<MeProfileResponse?> = userRepository.getMeProfileStream()
 
     fun checkConnectivity() {
         viewModelScope.launch {

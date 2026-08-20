@@ -13,6 +13,8 @@ import lk.happypaws.app.data.remote.model.MeProfileResponse
 import lk.happypaws.app.domain.repository.UserRepository
 import javax.inject.Inject
 
+import lk.happypaws.app.ui.profile.components.EmailChangeStep
+
 data class EditProfileUiState(
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
@@ -23,7 +25,14 @@ data class EditProfileUiState(
     val selectedImageBitmap: Bitmap? = null,
     val selectedImageMime: String = "image/jpeg",
     val isSuccess: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val showEditEmailSheet: Boolean = false,
+    val emailChangeStep: EmailChangeStep = EmailChangeStep.ENTER_DETAILS,
+    val newEmail: String = "",
+    val currentPassword: String = "",
+    val emailOtpCode: String = "",
+    val isEmailSubmitting: Boolean = false,
+    val emailSheetError: String? = null
 )
 
 @HiltViewModel
@@ -170,6 +179,99 @@ class EditProfileViewModel @Inject constructor(
                         it.copy(
                             isSaving = false,
                             errorMessage = error.message ?: "Failed to delete avatar"
+                        )
+                    }
+                }
+            )
+        }
+    }
+
+    fun openEditEmailSheet() {
+        _uiState.update {
+            it.copy(
+                showEditEmailSheet = true,
+                emailChangeStep = EmailChangeStep.ENTER_DETAILS,
+                newEmail = "",
+                currentPassword = "",
+                emailOtpCode = "",
+                isEmailSubmitting = false,
+                emailSheetError = null
+            )
+        }
+    }
+
+    fun dismissEditEmailSheet() {
+        _uiState.update {
+            it.copy(
+                showEditEmailSheet = false,
+                emailSheetError = null
+            )
+        }
+    }
+
+    fun onNewEmailChange(email: String) {
+        _uiState.update { it.copy(newEmail = email, emailSheetError = null) }
+    }
+
+    fun onCurrentPasswordChange(password: String) {
+        _uiState.update { it.copy(currentPassword = password, emailSheetError = null) }
+    }
+
+    fun onEmailOtpCodeChange(code: String) {
+        _uiState.update { it.copy(emailOtpCode = code, emailSheetError = null) }
+    }
+
+    fun requestEmailChange() {
+        val state = _uiState.value
+        if (state.newEmail.isBlank() || state.currentPassword.isBlank()) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isEmailSubmitting = true, emailSheetError = null) }
+            userRepository.requestEmailChange(state.newEmail.trim(), state.currentPassword).fold(
+                onSuccess = {
+                    _uiState.update {
+                        it.copy(
+                            isEmailSubmitting = false,
+                            emailChangeStep = EmailChangeStep.VERIFY_CODE,
+                            emailSheetError = null
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _uiState.update {
+                        it.copy(
+                            isEmailSubmitting = false,
+                            emailSheetError = error.message ?: "Failed to send verification code"
+                        )
+                    }
+                }
+            )
+        }
+    }
+
+    fun confirmEmailChange(onSuccess: (String) -> Unit) {
+        val state = _uiState.value
+        if (state.newEmail.isBlank() || state.emailOtpCode.length != 6) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isEmailSubmitting = true, emailSheetError = null) }
+            userRepository.confirmEmailChange(state.newEmail.trim(), state.emailOtpCode).fold(
+                onSuccess = { updatedProfile ->
+                    _uiState.update {
+                        it.copy(
+                            isEmailSubmitting = false,
+                            showEditEmailSheet = false,
+                            profile = updatedProfile,
+                            emailSheetError = null
+                        )
+                    }
+                    onSuccess(updatedProfile.email)
+                },
+                onFailure = { error ->
+                    _uiState.update {
+                        it.copy(
+                            isEmailSubmitting = false,
+                            emailSheetError = error.message ?: "Invalid or expired verification code"
                         )
                     }
                 }

@@ -1,7 +1,10 @@
 package lk.happypaws.app
 
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -18,9 +21,13 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
@@ -39,6 +46,9 @@ import lk.happypaws.app.ui.auth.SignUpOtpScreen
 import lk.happypaws.app.ui.auth.VerifyResetCodeScreen
 import lk.happypaws.app.ui.home.HomeScreen
 import lk.happypaws.app.ui.navigation.AppNavKey
+import lk.happypaws.app.ui.navigation.BottomNavItem
+import lk.happypaws.app.ui.navigation.HappyPawsBottomNavBar
+import lk.happypaws.app.ui.navigation.HomeNavKey
 import lk.happypaws.app.ui.onboarding.OnboardingScreen
 import lk.happypaws.app.ui.theme.HappyPawsTheme
 import javax.inject.Inject
@@ -55,6 +65,7 @@ class MainActivity : ComponentActivity() {
     lateinit var sessionManager: SessionManager
 
     private val mainViewModel: MainViewModel by viewModels()
+    private val createPostViewModel: lk.happypaws.app.ui.post.CreatePostViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
@@ -96,9 +107,83 @@ class MainActivity : ComponentActivity() {
                 }
 
                 val connectionState by mainViewModel.connectionState.collectAsStateWithLifecycle()
+                val meProfile by mainViewModel.meProfile.collectAsStateWithLifecycle()
 
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Box(modifier = Modifier.padding(innerPadding)) {
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry?.destination?.route
+
+                var selectedTabName by rememberSaveable { mutableStateOf("CommunityTab") }
+                val currentHomeTab: HomeNavKey = when (selectedTabName) {
+                    "NearbyTab" -> HomeNavKey.NearbyTab
+                    "ChatsTab" -> HomeNavKey.ChatsTab
+                    "ProfileTab" -> HomeNavKey.ProfileTab
+                    else -> HomeNavKey.CommunityTab
+                }
+
+                val isAuthRoute = if (currentRoute != null) {
+                    currentRoute.contains("Onboarding") ||
+                    currentRoute.contains("Login") ||
+                    currentRoute.contains("SignUp") ||
+                    currentRoute.contains("RegistrationSuccess") ||
+                    currentRoute.contains("ForgotPassword") ||
+                    currentRoute.contains("VerifyResetCode") ||
+                    currentRoute.contains("SetNewPassword") ||
+                    currentRoute.contains("PasswordResetSuccess")
+                } else {
+                    !authRepository.isLoggedIn()
+                }
+
+                val showBottomBar = !isAuthRoute
+
+                val activeBottomNavTab: HomeNavKey = when {
+                    currentRoute?.contains("Profile") == true ||
+                    currentRoute?.contains("KycVerification") == true ||
+                    currentRoute?.contains("LifestyleProfile") == true ||
+                    currentRoute?.contains("MyApplications") == true ||
+                    currentRoute?.contains("CommunityActivity") == true ||
+                    currentRoute?.contains("RoleManagement") == true ||
+                    currentRoute?.contains("ChangePassword") == true ||
+                    currentRoute?.contains("RegisteredDevices") == true ||
+                    currentRoute?.contains("FosterDashboard") == true ||
+                    currentRoute?.contains("TransportTasks") == true ||
+                    currentRoute?.contains("Sponsorships") == true ||
+                    currentRoute?.contains("VetConsultations") == true -> HomeNavKey.ProfileTab
+
+                    currentRoute?.contains("Home") == true -> currentHomeTab
+                    else -> currentHomeTab
+                }
+
+                val onTabSelected: (BottomNavItem) -> Unit = { item ->
+                    selectedTabName = item.route::class.simpleName ?: "CommunityTab"
+                    if (currentRoute?.contains("AppNavKey.Home") != true) {
+                        navController.navigate(AppNavKey.Home) {
+                            popUpTo(AppNavKey.Home) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    }
+                }
+
+                val onFabClick: () -> Unit = {
+                    if (currentRoute?.contains("CreatePostTypeSelection") != true) {
+                        navController.navigate(AppNavKey.CreatePostTypeSelection)
+                    }
+                }
+
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    bottomBar = {
+                        if (showBottomBar) {
+                            HappyPawsBottomNavBar(
+                                currentRoute = activeBottomNavTab,
+                                onTabSelected = onTabSelected,
+                                onFabClick = onFabClick,
+                                userAvatarKey = meProfile?.avatarKey,
+                                userName = meProfile?.name ?: ""
+                            )
+                        }
+                    }
+                ) { innerPadding ->
+                    Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
                         NavHost(
                             navController = navController,
                             startDestination = startRoute,
@@ -231,7 +316,9 @@ class MainActivity : ComponentActivity() {
                             }
                             composable<AppNavKey.Home> {
                                 HomeScreen(
+                                    currentTab = currentHomeTab,
                                     onLogout = {
+                                        selectedTabName = "CommunityTab"
                                         navController.navigate(AppNavKey.Onboarding) {
                                             popUpTo(0) { inclusive = true }
                                         }
@@ -252,16 +339,16 @@ class MainActivity : ComponentActivity() {
                                 lk.happypaws.app.ui.profile.StubScreen("KYC Verification") { navController.popBackStack() }
                             }
                             composable<AppNavKey.LifestyleProfile> {
-                                lk.happypaws.app.ui.profile.StubScreen("Lifestyle Profile") { navController.popBackStack() }
-                            }
-                            composable<AppNavKey.MyListings> {
-                                lk.happypaws.app.ui.profile.StubScreen("My Animal Listings") { navController.popBackStack() }
+                                lk.happypaws.app.ui.profile.LifestyleProfileScreen(
+                                    onNavigateBack = { navController.popBackStack() },
+                                    onNavigateToKyc = { navController.navigate(AppNavKey.KycVerification) }
+                                )
                             }
                             composable<AppNavKey.MyApplications> {
-                                lk.happypaws.app.ui.profile.StubScreen("My Adoption Applications") { navController.popBackStack() }
+                                lk.happypaws.app.ui.profile.StubScreen("My Applications") { navController.popBackStack() }
                             }
-                            composable<AppNavKey.RescueReports> {
-                                lk.happypaws.app.ui.profile.StubScreen("My Rescue Reports") { navController.popBackStack() }
+                            composable<AppNavKey.CommunityActivity> {
+                                lk.happypaws.app.ui.profile.StubScreen("Community Activity") { navController.popBackStack() }
                             }
                             composable<AppNavKey.RoleManagement> {
                                 lk.happypaws.app.ui.profile.StubScreen("Manage Roles") { navController.popBackStack() }
@@ -270,7 +357,9 @@ class MainActivity : ComponentActivity() {
                                 lk.happypaws.app.ui.profile.StubScreen("Change Password") { navController.popBackStack() }
                             }
                             composable<AppNavKey.RegisteredDevices> {
-                                lk.happypaws.app.ui.profile.StubScreen("Registered Devices") { navController.popBackStack() }
+                                lk.happypaws.app.ui.profile.RegisteredDevicesScreen(
+                                    onBackClick = { navController.popBackStack() }
+                                )
                             }
                             composable<AppNavKey.FosterDashboard> {
                                 lk.happypaws.app.ui.profile.StubScreen("Foster Dashboard") { navController.popBackStack() }
@@ -284,9 +373,70 @@ class MainActivity : ComponentActivity() {
                             composable<AppNavKey.VetConsultations> {
                                 lk.happypaws.app.ui.profile.StubScreen("Veterinarian Consultations") { navController.popBackStack() }
                             }
+
+                            // Community Post Creation Wizard
+                            composable<AppNavKey.CreatePostTypeSelection> {
+                                lk.happypaws.app.ui.post.PostTypeSelectionScreen(
+                                    onNavigateBack = { navController.popBackStack() },
+                                    onPostTypeSelected = { postType ->
+                                        when (postType) {
+                                            lk.happypaws.app.ui.post.model.CommunityPostType.ADOPTION_LISTING -> {
+                                                navController.navigate(AppNavKey.CreateAdoptionListing)
+                                            }
+                                            lk.happypaws.app.ui.post.model.CommunityPostType.RESCUE_REPORT -> {
+                                                navController.navigate(AppNavKey.CreateRescueReport)
+                                            }
+                                            lk.happypaws.app.ui.post.model.CommunityPostType.TRANSPORT_REQUEST -> {
+                                                navController.navigate(AppNavKey.CreateTransportRequest)
+                                            }
+                                            lk.happypaws.app.ui.post.model.CommunityPostType.COMMUNITY_STORY -> {
+                                                navController.navigate(AppNavKey.CreateCommunityStory)
+                                            }
+                                        }
+                                    },
+                                    viewModel = createPostViewModel
+                                 )
+                            }
+                            composable<AppNavKey.CreateAdoptionListing> {
+                                lk.happypaws.app.ui.post.CreateAdoptionListingScreen(
+                                    onNavigateBack = { navController.popBackStack() },
+                                    viewModel = createPostViewModel
+                                )
+                            }
+                            composable<AppNavKey.CreateRescueReport> {
+                                lk.happypaws.app.ui.post.rescue.RescueReportFlow(
+                                    onNavigateBack = { navController.popBackStack() }
+                                )
+                            }
+                            composable<AppNavKey.CreateTransportRequest> {
+                                lk.happypaws.app.ui.post.CreateTransportRequestScreen(
+                                    onNavigateBack = { navController.popBackStack() },
+                                    viewModel = createPostViewModel
+                                )
+                            }
+                            composable<AppNavKey.CreateCommunityStory> {
+                                lk.happypaws.app.ui.post.CreateCommunityStoryScreen(
+                                    onNavigateBack = { navController.popBackStack() },
+                                    viewModel = createPostViewModel
+                                )
+                            }
                         }
 
-                        if (connectionState == ConnectionState.ERROR) {
+                        AnimatedVisibility(
+                            visible = connectionState == ConnectionState.LOADING,
+                            enter = fadeIn(animationSpec = tween(250)),
+                            exit = fadeOut(animationSpec = tween(250))
+                        ) {
+                            lk.happypaws.app.ui.components.AppSkeletonScreen(
+                                isLoggedIn = authRepository.isLoggedIn()
+                            )
+                        }
+
+                        AnimatedVisibility(
+                            visible = connectionState == ConnectionState.ERROR,
+                            enter = fadeIn(animationSpec = tween(250)),
+                            exit = fadeOut(animationSpec = tween(250))
+                        ) {
                             lk.happypaws.app.ui.components.NoConnectionScreen(
                                 onRetry = { mainViewModel.checkConnectivity() }
                             )

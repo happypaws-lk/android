@@ -48,13 +48,10 @@ sealed interface AppNavKey {
     data object LifestyleProfile : AppNavKey
 
     @Serializable
-    data object MyListings : AppNavKey
-
-    @Serializable
     data object MyApplications : AppNavKey
 
     @Serializable
-    data object RescueReports : AppNavKey
+    data object CommunityActivity : AppNavKey
 
     @Serializable
     data object RoleManagement : AppNavKey
@@ -77,4 +74,20 @@ sealed interface AppNavKey {
 
     @Serializable
     data object VetConsultations : AppNavKey
+
+    // Community Post Creation Wizard
+    @Serializable
+    data object CreatePostTypeSelection : AppNavKey
+
+    @Serializable
+    data object CreateAdoptionListing : AppNavKey
+
+    @Serializable
+    data object CreateRescueReport : AppNavKey
+
+    @Serializable
+    data object CreateTransportRequest : AppNavKey
+
+    @Serializable
+    data object CreateCommunityStory : AppNavKey
 }

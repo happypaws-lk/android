@@ -2,8 +2,10 @@ package lk.happypaws.app.ui.home
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -19,6 +21,7 @@ import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.Report
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.VerifiedUser
+import androidx.compose.material.icons.outlined.People
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -103,14 +106,10 @@ fun ProfileScreen(
                                     onClick = { onNavigateTo(AppNavKey.MyApplications) }
                                 )
                                 ProfileListItem(
-                                    icon = Icons.Default.Pets,
-                                    title = "My Animal Listings",
-                                    onClick = { onNavigateTo(AppNavKey.MyListings) }
-                                )
-                                ProfileListItem(
-                                    icon = Icons.Default.Report,
-                                    title = "My Rescue Reports",
-                                    onClick = { onNavigateTo(AppNavKey.RescueReports) }
+                                    icon = Icons.Outlined.People,
+                                    title = "Community Activity",
+                                    subtitle = "Manage your posts and updates",
+                                    onClick = { onNavigateTo(AppNavKey.CommunityActivity) }
                                 )
                             }
                         }
@@ -200,28 +199,16 @@ fun ProfileScreen(
                         }
 
                         item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 24.dp, vertical = 32.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Button(
-                                    onClick = { viewModel.logout(onLogout) },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
-                                        contentColor = MaterialTheme.colorScheme.error
-                                    )
-                                ) {
-                                    Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null)
-                                    Text(
-                                        text = "Log Out",
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(start = 8.dp)
-                                    )
-                                }
-                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                            ProfileListItem(
+                                icon = Icons.AutoMirrored.Filled.ExitToApp,
+                                title = "Log Out",
+                                onClick = { viewModel.logout(onLogout) },
+                                iconTint = MaterialTheme.colorScheme.error,
+                                iconBackgroundColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
+                                showArrow = false
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
                             Text(
                                 text = "HappyPaws v1.0.0",
                                 style = MaterialTheme.typography.bodySmall,

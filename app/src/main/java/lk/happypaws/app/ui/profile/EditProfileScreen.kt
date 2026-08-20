@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -29,10 +30,13 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.rememberModalBottomSheetState
+import lk.happypaws.app.ui.profile.components.EditEmailBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -132,6 +136,7 @@ fun EditProfileScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
                 title = {
@@ -224,18 +229,20 @@ fun EditProfileScreen(
                     )
                 }
 
-                // Email Address Field (Read-Only)
+                // Email Address Field
                 OutlinedTextField(
                     value = profile?.email ?: "",
                     onValueChange = {},
                     enabled = false,
                     label = { Text("Email Address") },
                     trailingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Lock,
-                            contentDescription = "Read only",
-                            tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f)
-                        )
+                        IconButton(onClick = { viewModel.openEditEmailSheet() }) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit Email",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
@@ -243,12 +250,12 @@ fun EditProfileScreen(
                     colors = OutlinedTextFieldDefaults.colors(
                         disabledBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.15f),
                         disabledLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                        disabledTextColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                        disabledTextColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f)
                     )
                 )
 
                 Text(
-                    text = "Email is managed by HappyPaws Auth and cannot be changed here",
+                    text = "Tap edit icon to change your email address with password verification",
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(start = 4.dp, top = 6.dp, bottom = 24.dp)
@@ -283,8 +290,6 @@ fun EditProfileScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Saving Changes...", fontWeight = FontWeight.Bold)
                     } else {
-                        Icon(Icons.Default.Check, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
                         Text("Save Changes", fontWeight = FontWeight.Bold)
                     }
                 }
@@ -356,6 +361,30 @@ fun EditProfileScreen(
                     Text("Cancel")
                 }
             }
+        )
+    }
+
+    // ── Edit Email Bottom Sheet Modal ──
+    if (uiState.showEditEmailSheet) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        EditEmailBottomSheet(
+            sheetState = sheetState,
+            step = uiState.emailChangeStep,
+            newEmail = uiState.newEmail,
+            currentPassword = uiState.currentPassword,
+            code = uiState.emailOtpCode,
+            isLoading = uiState.isEmailSubmitting,
+            errorMessage = uiState.emailSheetError,
+            onNewEmailChange = viewModel::onNewEmailChange,
+            onCurrentPasswordChange = viewModel::onCurrentPasswordChange,
+            onCodeChange = viewModel::onEmailOtpCodeChange,
+            onRequestCode = viewModel::requestEmailChange,
+            onConfirmEmailChange = {
+                viewModel.confirmEmailChange { updatedEmail ->
+                    Toast.makeText(context, "Email address updated successfully!", Toast.LENGTH_LONG).show()
+                }
+            },
+            onDismiss = viewModel::dismissEditEmailSheet
         )
     }
 }

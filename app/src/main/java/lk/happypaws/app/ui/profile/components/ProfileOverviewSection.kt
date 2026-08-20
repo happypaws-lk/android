@@ -197,7 +197,7 @@ fun ProfileOverviewSection(
 }
 
 @Composable
-private fun ProfileStatColumn(
+fun ProfileStatColumn(
     icon: ImageVector,
     iconBackgroundColor: Color,
     iconTintColor: Color,
